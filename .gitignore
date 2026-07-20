@@ -23,3 +23,6 @@ yarn-debug.log*
 yarn-error.log*
 /README.md
 /.idea/
+/.reasonix/
+/backend/node_modules/
+/backend/.env
