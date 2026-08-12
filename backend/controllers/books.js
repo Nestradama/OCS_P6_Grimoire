@@ -39,10 +39,14 @@ exports.getBook = async (req, res) => {
 exports.createBook = async (req, res) => {
   try {
     // takes userId from auth middleware
-    const bookData = { ...req.body, userId: req.auth.userId };
+    const bookData = JSON.parse(req.body.book);
 
     // eslint-disable-next-line no-underscore-dangle
-    delete bookData._id;
+    bookData.userId = req.auth.userId;
+
+    if (req.file) {
+      bookData.imageUrl = `${req.protocol}://${req.get('host')}/images/${req.file.filename}`;
+    }
 
     const book = new Book(bookData);
     await book.save();
@@ -65,9 +69,16 @@ exports.updateBook = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
+    const updateData = req.file ? JSON.parse(req.body.book) : req.body;
+    updateData.userId = req.auth.userId;
+
+    if (req.file) {
+      updateData.imageUrl = `${req.protocol}://${req.get('host')}/images/${req.file.filename}`;
+    }
+
     const updatedBook = await Book.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updateData,
       { new: true },
     );
 

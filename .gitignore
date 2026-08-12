@@ -26,3 +26,4 @@ yarn-error.log*
 /.reasonix/
 /backend/node_modules/
 /backend/.env
+/backend/images/
