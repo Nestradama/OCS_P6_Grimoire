@@ -31,17 +31,23 @@ exports.getBook = async (req, res) => {
     }
     return res.status(200).json(book);
   } catch (err) {
+    if (err.name === 'CastError') {
+      return res.status(400).json({ message: 'Invalid book id' });
+    }
     return res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
-// POST /api/books — create a book (Temp JSON Only)
+// POST /api/books — create a book - Multipart
 exports.createBook = async (req, res) => {
   try {
+    let bookData;
+    try {
+      bookData = JSON.parse(req.body.book);
+    } catch (err) {
+      return res.status(400).json({ message: 'Invalid data format' });
+    }
     // takes userId from auth middleware
-    const bookData = JSON.parse(req.body.book);
-
-    // eslint-disable-next-line no-underscore-dangle
     bookData.userId = req.auth.userId;
 
     if (req.file) {
@@ -52,7 +58,10 @@ exports.createBook = async (req, res) => {
     await book.save();
     res.status(201).json(book);
   } catch (err) {
-    res.status(500).json({ message: 'Something went wrong' });
+    if (err.name === 'CastError') {
+      return res.status(400).json({ message: 'Invalid book id' });
+    }
+    return res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -69,7 +78,18 @@ exports.updateBook = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
-    const updateData = req.file ? JSON.parse(req.body.book) : req.body;
+    let updateData;
+
+    if (req.file) {
+      try {
+        updateData = JSON.parse(req.body.book);
+      } catch (err) {
+        return res.status(400).json({ message: 'Invalid book data format' });
+      }
+    } else {
+      updateData = req.body;
+    }
+
     updateData.userId = req.auth.userId;
 
     if (req.file) {
@@ -84,6 +104,9 @@ exports.updateBook = async (req, res) => {
 
     return res.status(200).json(updatedBook);
   } catch (err) {
+    if (err.name === 'CastError') {
+      return res.status(400).json({ message: 'Invalid book id' });
+    }
     return res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -104,6 +127,9 @@ exports.deleteBook = async (req, res) => {
     await Book.findByIdAndDelete(req.params.id);
     return res.status(200).json({ message: 'Book deleted' });
   } catch (err) {
+    if (err.name === 'CastError') {
+      return res.status(400).json({ message: 'Invalid book id' });
+    }
     return res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -121,14 +147,20 @@ exports.rateBook = async (req, res) => {
     const { rating } = req.body;
     const { userId } = req.auth;
 
+    const grade = Number(rating);
+
+    if (!Number.isInteger(grade) || grade < 0 || grade > 5) {
+      return res.status(400).json({ message: 'Rating must be an integer between 0 and 5' });
+    }
+
     const alreadyRated = book.ratings.find(
       (r) => r.userId === userId,
     );
 
     if (alreadyRated) {
-      alreadyRated.grade = rating;
+      alreadyRated.grade = grade;
     } else {
-      book.ratings.push({ userId, grade: rating });
+      book.ratings.push({ userId, grade });
     }
 
     const total = book.ratings.reduce((sum, r) => sum + r.grade, 0);
@@ -138,6 +170,9 @@ exports.rateBook = async (req, res) => {
 
     return res.status(200).json(book);
   } catch (err) {
+    if (err.name === 'CastError') {
+      return res.status(400).json({ message: 'Invalid book id' });
+    }
     return res.status(500).json({ message: 'Something went wrong' });
   }
 };
