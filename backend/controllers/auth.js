@@ -44,9 +44,7 @@ exports.login = async (req, res) => {
 
     // (if all good) SignIn.jsx line 37 -> Requires userId and token
     return res.status(200).json({
-      // eslint-disable-next-line no-underscore-dangle
       userId: user._id,
-      // eslint-disable-next-line no-underscore-dangle
       token: generateToken(user._id),
     });
   } catch (err) {

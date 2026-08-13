@@ -1,5 +1,6 @@
+const fs = require('fs');
+const { optimizeImage } = require('../services/images');
 const Book = require('../models/Book');
-
 // GET /api/books — return all books
 exports.getAllBooks = async (req, res) => {
   try {
@@ -51,7 +52,8 @@ exports.createBook = async (req, res) => {
     bookData.userId = req.auth.userId;
 
     if (req.file) {
-      bookData.imageUrl = `${req.protocol}://${req.get('host')}/images/${req.file.filename}`;
+      const optimizedName = await optimizeImage(req.file);
+      bookData.imageUrl = `${req.protocol}://${req.get('host')}/images/${optimizedName}`;
     }
 
     const book = new Book(bookData);
@@ -93,7 +95,8 @@ exports.updateBook = async (req, res) => {
     updateData.userId = req.auth.userId;
 
     if (req.file) {
-      updateData.imageUrl = `${req.protocol}://${req.get('host')}/images/${req.file.filename}`;
+      const optimizedName = await optimizeImage(req.file);
+      updateData.imageUrl = `${req.protocol}://${req.get('host')}/images/${optimizedName}`;
     }
 
     const updatedBook = await Book.findByIdAndUpdate(
@@ -125,6 +128,13 @@ exports.deleteBook = async (req, res) => {
     }
 
     await Book.findByIdAndDelete(req.params.id);
+    if (book.imageUrl) {
+      const filename = book.imageUrl.split('/').pop();
+      fs.unlink(`images/${filename}`, (err) => {
+        if (err) console.error('Image deletion failed:', err);
+      });
+    }
+
     return res.status(200).json({ message: 'Book deleted' });
   } catch (err) {
     if (err.name === 'CastError') {

@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
+const { hashPassword, comparePassword } = require('../services/password');
 
 // User Blueprint
 const userSchema = new mongoose.Schema(
@@ -18,12 +19,11 @@ const userSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+
 // Hash before store (pre save)
-userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
-  // Salt = random noise
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
+userSchema.pre('save', async function () {
+  if (!this.isModified('password')) return;
+  this.password = await hashPassword(this.password);
 });
 
 userSchema.methods.comparePassword = async function (candidatePassword) {
