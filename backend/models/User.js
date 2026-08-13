@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
 const { hashPassword, comparePassword } = require('../services/password');
 
 // User Blueprint
@@ -19,7 +18,6 @@ const userSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-
 // Hash before store (pre save)
 userSchema.pre('save', async function () {
   if (!this.isModified('password')) return;
@@ -27,7 +25,7 @@ userSchema.pre('save', async function () {
 });
 
 userSchema.methods.comparePassword = async function (candidatePassword) {
-  return bcrypt.compare(candidatePassword, this.password);
+  return comparePassword(candidatePassword, this.password);
 };
 
 module.exports = mongoose.model('User', userSchema);
